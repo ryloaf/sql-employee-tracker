@@ -7,7 +7,7 @@ const db = mysql.createConnection(
   {
     host: 'localhost',
     user: 'root',
-    password: 'Lizaloo767',
+    password: 'your_password here',
     database: 'employeeTracker_db'
   },
   console.log('Connected to the employeeTracker_db database.')
@@ -76,7 +76,7 @@ const db = mysql.createConnection(
                 case "Update an employee role":
                     updateRole();
                     break;
-                case "Exit";
+                case "Exit":
                   connection.end();
                   console.log("Sayonara!");
                   break;
