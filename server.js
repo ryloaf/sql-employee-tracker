@@ -7,43 +7,13 @@ const db = mysql.createConnection(
   {
     host: 'localhost',
     user: 'root',
-    password: 'your_password here',
+    password: 'Lizaloo767',
     database: 'employeeTracker_db'
   },
   console.log('Connected to the employeeTracker_db database.')
 );
 
-  function viewDepartments() {
-    db.query('select * from departments', function (err, results) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log(results);
-    });
-  }
-
-  function viewRoles () {
-    db.query('select * from roles', function (err, results) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log(results);
-    });
-  }
-
-  function viewEmployee () {
-    db.query('select * from employee', function (err, results) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log(results);
-    });
-  }
-
-  function start() {
+  function init() {
     inquirer.prompt([
         {
             type: 'list',
@@ -77,12 +47,137 @@ const db = mysql.createConnection(
                     updateRole();
                     break;
                 case "Exit":
-                  connection.end();
+                  // close database
+                  db.end();
                   console.log("Sayonara!");
                   break;
                 }
           });
 }
+
+function viewDepartments() {
+  db.query('select * from departments', function (err, results) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    console.log(results);
+  });
+}
+
+function viewRoles () {
+  db.query('select * from roles', function (err, results) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    console.log(results);
+  });
+}
+
+function viewEmployee () {
+  db.query('select * from employee', function (err, results) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    console.log(results);
+  });
+}
+
+function addDepartment() {
+  inquirer.prompt({
+    type: "input",
+    name: "name",
+    message: "Enter new department name:",
+  })
+  .then((response) => {
+    const query = `INSERT INTO departments (department_name) VALUES ("${response.name}")`;
+    db.query(query, function (err, results) {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      console.log("Department added successfully!");
+      init();
+    });
+  });
+}
+
+function addRole() {
+  db.query("SELECT * FROM departments", (err, res) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    inquirer.prompt([
+          {
+            type: "input",
+            name: "name",
+            message: "Enter new role title:",
+          },
+          {
+            type: "input",
+            name: "salary",
+            message: "Enter salary for the role:"
+          },
+          {
+            type: "list",
+            name: "department",
+            message: "Which department does this role belong to?",
+            choices: res.map(department => department.department_name)
+    },
+  ]).then((response) => {
+    const department = res.find(
+      department => department.department_name === response.department);
+    const query = "INSERT INTO roles SET ?";
+    db.query(query,
+      {
+        title: response.title,
+        salary: response.salary,
+        department_id: department.id,
+      },
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        console.log(`Added role ${response.title} with salary ${response.salary} to ${response.department} department in the database.`);
+        init();
+      }
+      );
+    });
+  });
+}
+
+function addEmployee() {
+    db.query("SELECT id, title FROM roles", (err, resRoles) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      const roles = resRoles.map(({ id, title }) => ({
+        name: title,
+        value: id,
+      }));
+
+      db.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employee',
+        (err, resEmployees) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
+          const employees = resEmployees.map(({ id, name }) => ({
+            name: name,
+            value: id,
+          }));
+
+
+        });
+    });
+}
+
+init();
 
   viewDepartments();
   viewRoles();
