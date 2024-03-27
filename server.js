@@ -1,18 +1,21 @@
+// required packages
 const inquirer = require("inquirer");
 const mysql = require('mysql2');
 
 const PORT = process.env.PORT || 3001;
 
+// created a connection to th MySQL database
 const db = mysql.createConnection(
   {
     host: 'localhost',
     user: 'root',
-    password: 'Lizaloo767',
+    password: 'your_password here',
     database: 'employeeTracker_db'
   },
   console.log('Connected to the employeeTracker_db database.')
 );
 
+// initializes the application
   function init() {
     inquirer.prompt([
         {
@@ -23,7 +26,7 @@ const db = mysql.createConnection(
         }
     ])
         .then((response) => {
-            //call function to respond to given prompt using the switch based in first input from inquire
+            // call coresponding function based on user's selection
             switch (response.question){
                 case "View all Departments":
                     viewDepartments();
@@ -55,6 +58,7 @@ const db = mysql.createConnection(
           });
 }
 
+// function to view all deparments in database
 function viewDepartments() {
   db.query('select * from departments', function (err, results) {
     if (err) {
@@ -65,6 +69,7 @@ function viewDepartments() {
   });
 }
 
+// function to view all roles in database
 function viewRoles () {
   db.query('select * from roles', function (err, results) {
     if (err) {
@@ -75,6 +80,7 @@ function viewRoles () {
   });
 }
 
+// function to view all employees in database
 function viewEmployee () {
   db.query('select * from employee', function (err, results) {
     if (err) {
@@ -85,6 +91,7 @@ function viewEmployee () {
   });
 }
 
+// function to add a department to the database
 function addDepartment() {
   inquirer.prompt({
     type: "input",
@@ -92,6 +99,7 @@ function addDepartment() {
     message: "Enter new department name:",
   })
   .then((response) => {
+    // construct SQL query to insert a new department
     const query = `INSERT INTO departments (department_name) VALUES ("${response.name}")`;
     db.query(query, function (err, results) {
       if (err) {
@@ -104,6 +112,7 @@ function addDepartment() {
   });
 }
 
+// function to add a role to the database
 function addRole() {
   db.query("SELECT * FROM departments", (err, res) => {
     if (err) {
@@ -150,7 +159,9 @@ function addRole() {
   });
 }
 
+// function to add an employee to the database
 function addEmployee() {
+  // retrieves roles from the database
     db.query("SELECT id, title FROM roles", (err, resRoles) => {
       if (err) {
         console.log(err);
@@ -161,6 +172,7 @@ function addEmployee() {
         value: id,
       }));
 
+      // retrieves employees from the database
       db.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employee',
         (err, resEmployees) => {
           if (err) {
@@ -171,11 +183,55 @@ function addEmployee() {
             name: name,
             value: id,
           }));
-
-
         });
     });
-}
+  }
+  // function to update an employee's role in the database
+    function updateRole() {
+      // retrieves the list of employees
+      db.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employee', (err, employees) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        // prompts the user to select an employee
+        inquirer.prompt([
+          {
+            type: 'list',
+            message: 'Select the employee whose role you want to update:',
+            name: 'employeeId',
+            choices: employees.map(employee => ({ name: employee.name, value: employee.id }))
+          }
+        ]).then(employeeResponse => {
+          // retrieves the list of roles
+          db.query('SELECT id, title FROM roles', (err, roles) => {
+            if (err) {
+              console.error(err);
+              return;
+            }
+            // prompts the user to select a new role for the employee
+            inquirer.prompt([
+              {
+                type: 'list',
+                message: 'Select a new role for the employee:',
+                name: 'roleId',
+                choices: roles.map(role => ({ name: role.title, value: role.id }))
+              }
+            ]).then(roleResponse => {
+              // updates the employee's role in the database
+              db.query('UPDATE employee SEET role_id = ? WHERE id = ?', [roleResponse.roleId, employeeResponse.employeeId], (err, result) => {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+                console.log('Employee role updated successfully!');
+                init();
+              });
+            });
+          });
+        });
+      });
+    }
 
 init();
 
